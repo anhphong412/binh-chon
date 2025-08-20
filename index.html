@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Bình Chọn Online</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0068FF 0%, #6a11cb 100%);
+            padding: 20px;
+            margin: 0;
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            margin: 20px auto;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-weight: 700;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            font-size: 28px;
+        }
+        .instructions {
+            background-color: #e8f4fc;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #0068FF;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .instructions i {
+            color: #0068FF;
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            font-size: 16px;
+        }
+        th, td {
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background: linear-gradient(to bottom, #0068FF, #0055D4);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            font-size: 17px;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f8ff;
+            transition: background-color 0.3s;
+        }
+        .family-name {
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            width: 30%;
+        }
+        .counter {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+        .counter-btn {
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #0068FF, #0055D4);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .counter-btn:hover {
+            background: linear-gradient(to bottom, #0055D4, #0047B5);
+            transform: scale(1.1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+        .counter-value {
+            font-size: 19px;
+            font-weight: 600;
+            min-width: 45px;
+            text-align: center;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background-color: #f0f8ff;
+            border: 1px solid #d0e8ff;
+        }
+        .summary {
+            margin-top: 35px;
+            padding: 25px;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            border-left: 5px solid #2ecc71;
+        }
+        .summary h2 {
+            margin-top: 0;
+            color: #27ae60;
+            font-weight: 700;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+        }
+        .summary h2 i {
+            margin-right: 12px;
+        }
+        .summary-content {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            min-width: 200px;
+            flex: 1;
+        }
+        .summary-item h3 {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .summary-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #0068FF;
+            margin: 15px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 35px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 15px 35px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        button i {
+            margin-right: 10px;
+        }
+        #save-btn {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+        }
+        #save-btn:hover {
+            background: linear-gradient(to right, #27ae60, #219653);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        #share-btn {
+            background: linear-gradient(to right, #0068FF, #0055D4);
+            color: white;
+        }
+        #share-btn:hover {
+            background: linear-gradient(to right, #0055D4, #0047B5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .save-confirmation {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .share-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            border-left: 5px solid #0068FF;
+            display: none;
+        }
+        .share-section h2 {
+            margin-top: 0;
+            color: #0068FF;
+            font-weight: 700;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+        }
+        .share-section h2 i {
+            margin-right: 12px;
+        }
+        .share-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .share-option {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        .share-option h3 {
+            margin-top: 0;
+            color: #7f8c8d;
+            display: flex;
+            align-items: center;
+        }
+        .share-option h3 i {
+            margin-right: 10px;
+            color: #0068FF;
+        }
+        #share-link {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .copy-btn {
+            padding: 10px 20px;
+            background: linear-gradient(to right, #0068FF, #0055D4);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background: linear-gradient(to right, #0055D4, #0047B5);
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .zalo-share {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .zalo-share-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #0068FF;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .zalo-share-button:hover {
+            background-color: #0055D4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .zalo-share-button i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @media (max-width: 992px) {
+            .container {
+                padding: 20px;
+            }
+            th, td {
+                padding: 12px;
+            }
+            .summary-content {
+                gap: 15px;
+            }
+            .summary-item {
+                min-width: 160px;
+                padding: 15px;
+            }
+            .summary-value {
+                font-size: 28px;
+            }
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+                border-radius: 12px;
+            }
+            th, td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            .counter-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+            .counter-value {
+                font-size: 16px;
+                min-width: 35px;
+            }
+            .summary-item {
+                min-width: 120px;
+                padding: 12px;
+            }
+            .summary-value {
+                font-size: 24px;
+            }
+            button {
+                padding: 12px 25px;
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 576px) {
+            .counter {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .summary-content {
+                flex-direction: column;
+            }
+            .share-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BẢNG BÌNH CHỌN ONLINE</h1>
+        
+        <div class="instructions">
+            <p><i class="fas fa-info-circle"></i><strong> Hướng dẫn:</strong> Nhấn vào các nút <i class="fas fa-plus"></i> và <i class="fas fa-minus"></i> để điều chỉnh số lượng người lớn và trẻ em tham gia từ mỗi gia đình. Kết quả sẽ được lưu tự động. Sử dụng nút <strong>Chia sẻ</strong> để chia sẻ liên kết cho mọi người cùng tham gia bình chọn.</p>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Gia đình</th>
+                    <th>Người lớn</th>
+                    <th>Trẻ em</th>
+                    <th>Tổng thành viên</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Các hàng dữ liệu sẽ được thêm bằng JavaScript -->
+            </tbody>
+        </table>
+        
+        <div class="summary">
+            <h2><i class="fas fa-chart-pie"></i>TỔNG KẾT SỐ LƯỢNG THAM GIA</h2>
+            <div class="summary-content">
+                <div class="summary-item">
+                    <h3>Tổng số gia đình</h3>
+                    <div class="summary-value" id="total-families">0</div>
+                </div>
+                <div class="summary-item">
+                    <h3>Tổng số người lớn</h3>
+                    <div class="summary-value" id="total-adults">0</div>
+                </div>
+                <div class="summary-item">
+                    <h3>Tổng số trẻ em</h3>
+                    <div class="summary-value" id="total-children">0</div>
+                </div>
+                <div class="summary-item">
+                    <h3>Tổng số người tham gia</h3>
+                    <div class="summary-value" id="total-participants">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="save-confirmation" id="save-confirmation">
+            <i class="fas fa-check-circle"></i> Kết quả đã được lưu tự động!
+        </div>
+        
+        <div class="buttons">
+            <button id="share-btn">
+                <i class="fas fa-share-alt"></i> Chia sẻ
+            </button>
+        </div>
+        
+        <div class="share-section" id="share-section">
+            <h2><i class="fas fa-share-alt"></i>Chia Sẻ Liên Kết</h2>
+            <p>Chia sẻ liên kết hoặc mã QR này để mọi người có thể tham gia bình chọn:</p>
+            
+            <div class="share-options">
+                <div class="share-option">
+                    <h3><i class="fas fa-link"></i> Liên kết chia sẻ</h3>
+                    <input type="text" id="share-link" readonly>
+                    <button class="copy-btn" id="copy-link-btn">
+                        <i class="fas fa-copy"></i> Sao chép liên kết
+                    </button>
+                </div>
+                
+                <div class="share-option">
+                    <h3><i class="fas fa-qrcode"></i> Mã QR</h3>
+                    <div id="qrcode"></div>
+                    <p style="text-align: center; margin-top: 10px; font-size: 14px;">Quét mã QR để tham gia bình chọn</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dữ liệu các gia đình
+            const families = [
+                "Gia đình ông Cửu",
+                "Gia đình ông Muôn",
+                "Gia đình ông Quảng",
+                "Gia đình cô Tứ",
+                "Gia đình cô Dẫn",
+                "Gia đình cô Ngần",
+                "Gia đình cô Ngân",
+                "Gia đình cô Bé",
+                "Gia đình cô Bạn",
+                "Gia đình cô Chín"
+            ];
+            
+            const tableBody = document.querySelector('tbody');
+            const totalFamiliesElem = document.getElementById('total-families');
+            const totalAdultsElem = document.getElementById('total-adults');
+            const totalChildrenElem = document.getElementById('total-children');
+            const totalParticipantsElem = document.getElementById('total-participants');
+            const saveConfirmation = document.getElementById('save-confirmation');
+            const shareSection = document.getElementById('share-section');
+            const shareLink = document.getElementById('share-link');
+            const copyLinkBtn = document.getElementById('copy-link-btn');
+            const shareBtn = document.getElementById('share-btn');
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Sử dụng Firebase Realtime Database để lưu trữ dữ liệu online
+            // Bạn cần thay thế thông tin cấu hình Firebase của mình ở đây
+            const firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+                databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_PROJECT_ID.appspot.com",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+            
+            // Khởi tạo Firebase
+            // firebase.initializeApp(firebaseConfig);
+            // const database = firebase.database();
+            
+            // Trong khi chờ tích hợp Firebase, sử dụng localStorage làm giải pháp tạm thời
+            let sessionId = localStorage.getItem('familySessionId');
+            if (!sessionId) {
+                sessionId = 'family-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('familySessionId', sessionId);
+            }
+            
+            let counters = JSON.parse(localStorage.getItem(sessionId));
+            
+            if (!counters) {
+                counters = families.map(() => ({ adults: 0, children: 0 }));
+                localStorage.setItem(sessionId, JSON.stringify(counters));
+            }
+            
+            // Tạo hàng trong bảng cho mỗi gia đình
+            families.forEach((family, index) => {
+                const row = document.createElement('tr');
+                
+                // Tên gia đình
+                const nameCell = document.createElement('td');
+                nameCell.textContent = family;
+                nameCell.className = 'family-name';
+                row.appendChild(nameCell);
+                
+                // Người lớn
+                const adultsCell = document.createElement('td');
+                adultsCell.innerHTML = `
+                    <div class="counter">
+                        <button class="counter-btn" data-family="${index}" data-type="adults" data-action="decrease">-</button>
+                        <span class="counter-value" id="adults-${index}">${counters[index].adults}</span>
+                        <button class="counter-btn" data-family="${index}" data-type="adults" data-action="increase">+</button>
+                    </div>
+                `;
+                row.appendChild(adultsCell);
+                
+                // Trẻ em
+                const childrenCell = document.createElement('td');
+                childrenCell.innerHTML = `
+                    <div class="counter">
+                        <button class="counter-btn" data-family="${index}" data-type="children" data-action="decrease">-</button>
+                        <span class="counter-value" id="children-${index}">${counters[index].children}</span>
+                        <button class="counter-btn" data-family="${index}" data-type="children" data-action="increase">+</button>
+                    </div>
+                `;
+                row.appendChild(childrenCell);
+                
+                // Tổng thành viên
+                const totalCell = document.createElement('td');
+                totalCell.id = `total-${index}`;
+                totalCell.textContent = counters[index].adults + counters[index].children;
+                totalCell.style.fontWeight = '600';
+                row.appendChild(totalCell);
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Cập nhật tổng số
+            function updateTotals() {
+                let totalAdults = 0;
+                let totalChildren = 0;
+                
+                counters.forEach((counter, index) => {
+                    totalAdults += counter.adults;
+                    totalChildren += counter.children;
+                    
+                    document.getElementById(`adults-${index}`).textContent = counter.adults;
+                    document.getElementById(`children-${index}`).textContent = counter.children;
+                    document.getElementById(`total-${index}`).textContent = counter.adults + counter.children;
+                });
+                
+                totalFamiliesElem.textContent = families.length;
+                totalAdultsElem.textContent = totalAdults;
+                totalChildrenElem.textContent = totalChildren;
+                totalParticipantsElem.textContent = totalAdults + totalChildren;
+                
+                // Lưu tự động mỗi khi có thay đổi
+                localStorage.setItem(sessionId, JSON.stringify(counters));
+                
+                // Hiển thị thông báo
+                saveConfirmation.style.display = 'block';
+                
+                // Ẩn thông báo sau 3 giây
+                setTimeout(() => {
+                    saveConfirmation.style.display = 'none';
+                }, 3000);
+            }
+            
+            // Xử lý sự kiện click
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('counter-btn')) {
+                    const familyIndex = parseInt(e.target.dataset.family);
+                    const type = e.target.dataset.type;
+                    const action = e.target.dataset.action;
+                    
+                    if (action === 'increase') {
+                        counters[familyIndex][type]++;
+                    } else if (action === 'decrease' && counters[familyIndex][type] > 0) {
+                        counters[familyIndex][type]--;
+                    }
+                    
+                    updateTotals();
+                }
+            });
+            
+            // Nút chia sẻ
+            shareBtn.addEventListener('click', function() {
+                // Tạo liên kết chia sẻ
+                const currentUrl = window.location.href.split('?')[0];
+                const shareUrl = `${currentUrl}?session=${sessionId}`;
+                shareLink.value = shareUrl;
+                
+                // Tạo mã QR
+                qrcodeDiv.innerHTML = '';
+                QRCode.toCanvas(shareUrl, { width: 200, height: 200 }, function(err, canvas) {
+                    if (err) console.error(err);
+                    qrcodeDiv.appendChild(canvas);
+                });
+                
+                // Hiển thị phần chia sẻ
+                shareSection.style.display = 'block';
+            });
+            
+            // Nút sao chép liên kết
+            copyLinkBtn.addEventListener('click', function() {
+                shareLink.select();
+                document.execCommand('copy');
+                
+                // Hiệu ứng cho biết đã sao chép
+                const originalText = copyLinkBtn.innerHTML;
+                copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Đã sao chép!';
+                setTimeout(() => {
+                    copyLinkBtn.innerHTML = originalText;
+                }, 2000);
+            });
+            
+            // Kiểm tra xem URL có chứa tham số session không
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedSessionId = urlParams.get('session');
+            
+            if (sharedSessionId && sharedSessionId !== sessionId) {
+                // Nếu có, thử tải dữ liệu từ session được chia sẻ
+                const sharedData = localStorage.getItem(sharedSessionId);
+                if (sharedData) {
+                    if (confirm('Bạn muốn tải dữ liệu từ liên kết được chia sẻ không?')) {
+                        counters = JSON.parse(sharedData);
+                        sessionId = sharedSessionId;
+                        localStorage.setItem('familySessionId', sessionId);
+                        updateTotals();
+                    }
+                }
+            }
+            
+            // Khởi tạo tổng số
+            updateTotals();
+        });
+    </script>
+</body>
+</html>
