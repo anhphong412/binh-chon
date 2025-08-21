@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Bình Chọn Online</title>
+    <title>Bảng Bình Chọn Online - Đồng bộ thời gian thực</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- Thêm Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js"></script>
+    <!-- Firebase App (core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -29,6 +30,7 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             padding: 30px;
             margin: 20px auto;
+            position: relative;
         }
         h1 {
             text-align: center;
@@ -327,6 +329,7 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         .connected {
             background-color: #d4edda;
@@ -335,6 +338,20 @@
         .disconnected {
             background-color: #f8d7da;
             color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #0068FF;
+        }
+        .loading i {
+            animation: spin 1s infinite linear;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -412,13 +429,17 @@
     </div>
     
     <div class="container">
-        <h1>BẢNG BÌNH CHỌN ONLINE</h1>
+        <h1>BẢNG BÌNH CHỌN ONLINE - ĐỒNG BỘ THỜI GIAN THỰC</h1>
         
         <div class="instructions">
-            <p><i class="fas fa-info-circle"></i><strong> Hướng dẫn:</strong> Nhấn vào các nút <i class="fas fa-plus"></i> và <i class="fas fa-minus"></i> để điều chỉnh số lượng người lớn và trẻ em tham gia từ mỗi gia đình. Kết quả sẽ được lưu tự động. Sử dụng nút <strong>Chia sẻ</strong> để chia sẻ liên kết cho mọi người cùng tham gia bình chọn.</p>
+            <p><i class="fas fa-info-circle"></i><strong> Hướng dẫn:</strong> Nhấn vào các nút <i class="fas fa-plus"></i> và <i class="fas fa-minus"></i> để điều chỉnh số lượng người lớn và trẻ em tham gia từ mỗi gia đình. Kết quả sẽ được lưu tự động và đồng bộ với mọi người. Sử dụng nút <strong>Chia sẻ</strong> để chia sẻ liên kết cho mọi người cùng tham gia bình chọn.</p>
         </div>
         
-        <table>
+        <div id="loading-data" class="loading">
+            <i class="fas fa-spinner"></i> Đang tải dữ liệu...
+        </div>
+        
+        <table style="display: none;" id="voting-table">
             <thead>
                 <tr>
                     <th>Gia đình</th>
@@ -432,7 +453,7 @@
             </tbody>
         </table>
         
-        <div class="summary">
+        <div class="summary" id="summary-section" style="display: none;">
             <h2><i class="fas fa-chart-pie"></i>TỔNG KẾT SỐ LƯỢNG THAM GIA</h2>
             <div class="summary-content">
                 <div class="summary-item">
@@ -461,6 +482,9 @@
         <div class="buttons">
             <button id="share-btn">
                 <i class="fas fa-share-alt"></i> Chia sẻ
+            </button>
+            <button id="new-session-btn">
+                <i class="fas fa-plus"></i> Phiên bình chọn mới
             </button>
         </div>
         
@@ -512,27 +536,31 @@
             const shareLink = document.getElementById('share-link');
             const copyLinkBtn = document.getElementById('copy-link-btn');
             const shareBtn = document.getElementById('share-btn');
+            const newSessionBtn = document.getElementById('new-session-btn');
             const qrcodeDiv = document.getElementById('qrcode');
             const connectionStatus = document.getElementById('connection-status');
+            const loadingData = document.getElementById('loading-data');
+            const votingTable = document.getElementById('voting-table');
+            const summarySection = document.getElementById('summary-section');
             
-            // Cấu hình Firebase - Bạn cần thay thế bằng cấu hình của mình
-const firebaseConfig = {
-    apiKey: "AIzaSyD93PPAxiGdNeh0_nc17NaKvXum5NmUK0Q",
-    authDomain: "binh-chon.firebaseapp.com",
-    databaseURL: "https://binh-chon-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "binh-chon",
-    storageBucket: "binh-chon.firebasestorage.app",
-    messagingSenderId: "149669703371",
-    appId: "1:149669703371:web:899fb312e86d43c51f754e",
-    measurementId: "G-BKKWCBKJXX"
-  };
+            // Cấu hình Firebase của bạn
+            const firebaseConfig = {
+                apiKey: "AIzaSyD93PPAxiGdNeh0_nc17NaKvXum5NmUK0Q",
+                authDomain: "binh-chon.firebaseapp.com",
+                databaseURL: "https://binh-chon-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "binh-chon",
+                storageBucket: "binh-chon.firebasestorage.app",
+                messagingSenderId: "149669703371",
+                appId: "1:149669703371:web:899fb312e86d43c51f754e",
+                measurementId: "G-BKKWCBKJXX"
+            };
             
             // Khởi tạo Firebase
             firebase.initializeApp(firebaseConfig);
             const database = firebase.database();
             
             // Tạo một session ID mặc định
-            let sessionId = 'family-voting-session';
+            let sessionId = 'default-session';
             
             // Kiểm tra xem URL có chứa tham số session không
             const urlParams = new URLSearchParams(window.location.search);
@@ -540,6 +568,11 @@ const firebaseConfig = {
             
             if (urlSessionId) {
                 sessionId = urlSessionId;
+            } else {
+                // Nếu không có session ID trong URL, tạo một ID mới và chuyển hướng
+                const newSessionId = 'session-' + Date.now();
+                window.history.replaceState({}, document.title, `${window.location.pathname}?session=${newSessionId}`);
+                sessionId = newSessionId;
             }
             
             // Tham chiếu đến dữ liệu trên Firebase
@@ -550,10 +583,10 @@ const firebaseConfig = {
             connectedRef.on("value", function(snap) {
                 if (snap.val() === true) {
                     connectionStatus.className = "connection-status connected";
-                    connectionStatus.innerHTML = '<i class="fas fa-wifi"></i><span>Đã kết nối</span>';
+                    connectionStatus.innerHTML = '<i class="fas fa-wifi"></i><span>Đã kết nối Firebase</span>';
                 } else {
                     connectionStatus.className = "connection-status disconnected";
-                    connectionStatus.innerHTML = '<i class="fas fa-wifi-slash"></i><span>Mất kết nối</span>';
+                    connectionStatus.innerHTML = '<i class="fas fa-wifi-slash"></i><span>Mất kết nối Firebase</span>';
                 }
             });
             
@@ -586,7 +619,7 @@ const firebaseConfig = {
                 childrenCell.innerHTML = `
                     <div class="counter">
                         <button class="counter-btn" data-family="${index}" data-type="children" data-action="decrease">-</button>
-                        <span class="counter-value" children="children-${index}">0</span>
+                        <span class="counter-value" id="children-${index}">0</span>
                         <button class="counter-btn" data-family="${index}" data-type="children" data-action="increase">+</button>
                     </div>
                 `;
@@ -605,10 +638,25 @@ const firebaseConfig = {
             // Lắng nghe thay đổi từ Firebase
             sessionRef.on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    counters = data.counters || counters;
+                if (data && data.counters) {
+                    counters = data.counters;
                     updateUI();
+                    
+                    // Ẩn loading và hiển thị bảng
+                    loadingData.style.display = 'none';
+                    votingTable.style.display = 'table';
+                    summarySection.style.display = 'block';
+                } else {
+                    // Nếu chưa có dữ liệu, khởi tạo dữ liệu mặc định
+                    sessionRef.set({
+                        counters: counters,
+                        lastUpdated: firebase.database.ServerValue.TIMESTAMP,
+                        created: firebase.database.ServerValue.TIMESTAMP
+                    });
                 }
+            }, (error) => {
+                console.error("Lỗi khi đọc dữ liệu:", error);
+                loadingData.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Lỗi khi tải dữ liệu. Vui lòng tải lại trang.';
             });
             
             // Cập nhật giao diện người dùng
@@ -633,7 +681,7 @@ const firebaseConfig = {
             
             // Cập nhật dữ liệu lên Firebase
             function updateFirebase() {
-                sessionRef.set({
+                sessionRef.update({
                     counters: counters,
                     lastUpdated: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
@@ -670,7 +718,7 @@ const firebaseConfig = {
             // Nút chia sẻ
             shareBtn.addEventListener('click', function() {
                 // Tạo liên kết chia sẻ
-                const currentUrl = window.location.href.split('?')[0];
+                const currentUrl = window.location.origin + window.location.pathname;
                 const shareUrl = `${currentUrl}?session=${sessionId}`;
                 shareLink.value = shareUrl;
                 
@@ -698,8 +746,16 @@ const firebaseConfig = {
                 }, 2000);
             });
             
-            // Khởi tạo UI
-            updateUI();
+            // Nút tạo phiên bình chọn mới
+            newSessionBtn.addEventListener('click', function() {
+                if (confirm('Bạn có chắc muốn tạo phiên bình chọn mới? Dữ liệu hiện tại sẽ được giữ nguyên.')) {
+                    const newSessionId = 'session-' + Date.now();
+                    window.location.href = `${window.location.pathname}?session=${newSessionId}`;
+                }
+            });
+            
+            // Hiển thị session ID trên tiêu đề
+            document.title += " - " + sessionId;
         });
     </script>
 </body>
