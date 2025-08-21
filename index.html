@@ -6,6 +6,9 @@
     <title>Bảng Bình Chọn Online</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Thêm Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -312,6 +315,27 @@
             margin-right: 10px;
             font-size: 20px;
         }
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -382,6 +406,11 @@
     </style>
 </head>
 <body>
+    <div class="connection-status" id="connection-status">
+        <i class="fas fa-wifi"></i>
+        <span>Đang kết nối...</span>
+    </div>
+    
     <div class="container">
         <h1>BẢNG BÌNH CHỌN ONLINE</h1>
         
@@ -484,36 +513,52 @@
             const copyLinkBtn = document.getElementById('copy-link-btn');
             const shareBtn = document.getElementById('share-btn');
             const qrcodeDiv = document.getElementById('qrcode');
+            const connectionStatus = document.getElementById('connection-status');
             
-            // Sử dụng Firebase Realtime Database để lưu trữ dữ liệu online
-            // Bạn cần thay thế thông tin cấu hình Firebase của mình ở đây
+            // Cấu hình Firebase - Bạn cần thay thế bằng cấu hình của mình
             const firebaseConfig = {
-                apiKey: "YOUR_API_KEY",
-                authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-                databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_PROJECT_ID.appspot.com",
-                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-                appId: "YOUR_APP_ID"
-            };
+    apiKey: "AIzaSyD93PPAxiGdNeh0_nc17NaKvXum5NmUK0Q",
+    authDomain: "binh-chon.firebaseapp.com",
+    databaseURL: "https://binh-chon-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "binh-chon",
+    storageBucket: "binh-chon.firebasestorage.app",
+    messagingSenderId: "149669703371",
+    appId: "1:149669703371:web:899fb312e86d43c51f754e",
+    measurementId: "G-BKKWCBKJXX"
+  };
             
             // Khởi tạo Firebase
-            // firebase.initializeApp(firebaseConfig);
-            // const database = firebase.database();
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
             
-            // Trong khi chờ tích hợp Firebase, sử dụng localStorage làm giải pháp tạm thời
-            let sessionId = localStorage.getItem('familySessionId');
-            if (!sessionId) {
-                sessionId = 'family-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('familySessionId', sessionId);
+            // Tạo một session ID mặc định
+            let sessionId = 'family-voting-session';
+            
+            // Kiểm tra xem URL có chứa tham số session không
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlSessionId = urlParams.get('session');
+            
+            if (urlSessionId) {
+                sessionId = urlSessionId;
             }
             
-            let counters = JSON.parse(localStorage.getItem(sessionId));
+            // Tham chiếu đến dữ liệu trên Firebase
+            const sessionRef = database.ref('sessions/' + sessionId);
             
-            if (!counters) {
-                counters = families.map(() => ({ adults: 0, children: 0 }));
-                localStorage.setItem(sessionId, JSON.stringify(counters));
-            }
+            // Cập nhật trạng thái kết nối
+            const connectedRef = database.ref(".info/connected");
+            connectedRef.on("value", function(snap) {
+                if (snap.val() === true) {
+                    connectionStatus.className = "connection-status connected";
+                    connectionStatus.innerHTML = '<i class="fas fa-wifi"></i><span>Đã kết nối</span>';
+                } else {
+                    connectionStatus.className = "connection-status disconnected";
+                    connectionStatus.innerHTML = '<i class="fas fa-wifi-slash"></i><span>Mất kết nối</span>';
+                }
+            });
+            
+            // Khởi tạo dữ liệu
+            let counters = Array(families.length).fill().map(() => ({ adults: 0, children: 0 }));
             
             // Tạo hàng trong bảng cho mỗi gia đình
             families.forEach((family, index) => {
@@ -530,7 +575,7 @@
                 adultsCell.innerHTML = `
                     <div class="counter">
                         <button class="counter-btn" data-family="${index}" data-type="adults" data-action="decrease">-</button>
-                        <span class="counter-value" id="adults-${index}">${counters[index].adults}</span>
+                        <span class="counter-value" id="adults-${index}">0</span>
                         <button class="counter-btn" data-family="${index}" data-type="adults" data-action="increase">+</button>
                     </div>
                 `;
@@ -541,7 +586,7 @@
                 childrenCell.innerHTML = `
                     <div class="counter">
                         <button class="counter-btn" data-family="${index}" data-type="children" data-action="decrease">-</button>
-                        <span class="counter-value" id="children-${index}">${counters[index].children}</span>
+                        <span class="counter-value" children="children-${index}">0</span>
                         <button class="counter-btn" data-family="${index}" data-type="children" data-action="increase">+</button>
                     </div>
                 `;
@@ -550,15 +595,24 @@
                 // Tổng thành viên
                 const totalCell = document.createElement('td');
                 totalCell.id = `total-${index}`;
-                totalCell.textContent = counters[index].adults + counters[index].children;
+                totalCell.textContent = "0";
                 totalCell.style.fontWeight = '600';
                 row.appendChild(totalCell);
                 
                 tableBody.appendChild(row);
             });
             
-            // Cập nhật tổng số
-            function updateTotals() {
+            // Lắng nghe thay đổi từ Firebase
+            sessionRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    counters = data.counters || counters;
+                    updateUI();
+                }
+            });
+            
+            // Cập nhật giao diện người dùng
+            function updateUI() {
                 let totalAdults = 0;
                 let totalChildren = 0;
                 
@@ -575,17 +629,25 @@
                 totalAdultsElem.textContent = totalAdults;
                 totalChildrenElem.textContent = totalChildren;
                 totalParticipantsElem.textContent = totalAdults + totalChildren;
-                
-                // Lưu tự động mỗi khi có thay đổi
-                localStorage.setItem(sessionId, JSON.stringify(counters));
-                
-                // Hiển thị thông báo
-                saveConfirmation.style.display = 'block';
-                
-                // Ẩn thông báo sau 3 giây
-                setTimeout(() => {
-                    saveConfirmation.style.display = 'none';
-                }, 3000);
+            }
+            
+            // Cập nhật dữ liệu lên Firebase
+            function updateFirebase() {
+                sessionRef.set({
+                    counters: counters,
+                    lastUpdated: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    // Hiển thị thông báo
+                    saveConfirmation.style.display = 'block';
+                    
+                    // Ẩn thông báo sau 3 giây
+                    setTimeout(() => {
+                        saveConfirmation.style.display = 'none';
+                    }, 3000);
+                }).catch((error) => {
+                    console.error("Lỗi khi lưu dữ liệu:", error);
+                    alert("Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.");
+                });
             }
             
             // Xử lý sự kiện click
@@ -601,7 +663,7 @@
                         counters[familyIndex][type]--;
                     }
                     
-                    updateTotals();
+                    updateFirebase();
                 }
             });
             
@@ -636,25 +698,8 @@
                 }, 2000);
             });
             
-            // Kiểm tra xem URL có chứa tham số session không
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedSessionId = urlParams.get('session');
-            
-            if (sharedSessionId && sharedSessionId !== sessionId) {
-                // Nếu có, thử tải dữ liệu từ session được chia sẻ
-                const sharedData = localStorage.getItem(sharedSessionId);
-                if (sharedData) {
-                    if (confirm('Bạn muốn tải dữ liệu từ liên kết được chia sẻ không?')) {
-                        counters = JSON.parse(sharedData);
-                        sessionId = sharedSessionId;
-                        localStorage.setItem('familySessionId', sessionId);
-                        updateTotals();
-                    }
-                }
-            }
-            
-            // Khởi tạo tổng số
-            updateTotals();
+            // Khởi tạo UI
+            updateUI();
         });
     </script>
 </body>
